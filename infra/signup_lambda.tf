@@ -9,8 +9,8 @@ resource "aws_lambda_function" "signup_lambda_quotezen" {
   role          = aws_iam_role.lambda_auth_role_quotezen.arn
   handler       = "main.handler"
   runtime       = "python3.9"
-  timeout          = 600
-  memory_size      = 512
+  timeout          = 10
+  memory_size      = 256
   filename         = data.archive_file.lambda_package_signup_quotezen.output_path
   source_code_hash = data.archive_file.lambda_package_signup_quotezen.output_base64sha256
 

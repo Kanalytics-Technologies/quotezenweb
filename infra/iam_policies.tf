@@ -57,7 +57,8 @@ resource "aws_iam_policy" "lambda_cognito_policy_quotezen" {
           "cognito-idp:SignUp",
           "cognito-idp:ConfirmSignUp",
           "cognito-idp:ForgotPassword",
-          "cognito-idp:ConfirmForgotPassword"
+          "cognito-idp:ConfirmForgotPassword",
+          "cognito-idp:InitiateAuth"
         ]
         Resource = aws_cognito_user_pool.user_pool_quotezen.arn
       }
