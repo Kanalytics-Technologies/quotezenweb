@@ -20,6 +20,11 @@ def handler(event, context):
     if not email or not confirmation_code:
         return {
             "statusCode": 400,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
             "body": json.dumps({"message": "Email and confirmation code are required!"}),
         }
     try:
@@ -38,6 +43,11 @@ def handler(event, context):
 
         return {
             "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
             "body": json.dumps({"message": "Account successfully confirmed. You can now log in."})
         }
 
@@ -49,6 +59,11 @@ def handler(event, context):
 
         return {
             "statusCode": 400,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
             "body": json.dumps({
                 "message": "Confirmation code expired. A new code has been sent to your email."
             }),
@@ -57,17 +72,32 @@ def handler(event, context):
     except cognito_client.exceptions.CodeMismatchException:
         return {
             "statusCode": 400,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
             "body": json.dumps({"message": "Invalid confirmation code."}),
         }
 
     except cognito_client.exceptions.UserNotFoundException:
         return {
             "statusCode": 404,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
             "body": json.dumps({"message": "User does not exist."}),
         }
 
     except Exception as e:
         return {
             "statusCode": 500,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
             "body": json.dumps({"message": str(e)}),
         }

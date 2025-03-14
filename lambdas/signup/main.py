@@ -27,6 +27,11 @@ def handler(event, context):
         if not email or not password or not role or not company:
             return {
                 "statusCode": 400,
+                "headers": {
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization"
+                },
                 "body": json.dumps({"message": "More fields required!"}),
             }
 
@@ -53,6 +58,11 @@ def handler(event, context):
 
         return {
             "statusCode": 200,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
             "body": json.dumps(
                 {"message": "User created. Check your email to confirm your account."}
             ),
@@ -61,8 +71,20 @@ def handler(event, context):
     except cognito_client.exceptions.UsernameExistsException:
         return {
             "statusCode": 400,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
             "body": json.dumps({"message": "User already exists."}),
         }
 
     except Exception as e:
-        return {"statusCode": 500, "body": json.dumps({"message": str(e)})}
+        return {
+            "statusCode": 500,
+            "headers": {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization"
+            },
+            "body": json.dumps({"message": str(e)})}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User List</title>
+
+    <!-- ✅ Tailwind CSS para Estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- ✅ HTMX para Peticiones Dinámicas -->
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <div class="max-w-2xl mx-auto bg-white shadow-lg rounded-lg p-6">
+        <h2 class="text-2xl font-bold text-center mb-4">User List</h2>
+
+        <!-- Tabla de Usuarios -->
+        <table class="w-full border-collapse border border-gray-300">
+            <thead>
+                <tr class="bg-gray-200">
+                    <th class="border border-gray-300 px-4 py-2">Email</th>
+                    <th class="border border-gray-300 px-4 py-2">Role</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr class="bg-white hover:bg-gray-100">
+                    <td class="border border-gray-300 px-4 py-2">{{ user.email }}</td>
+                    <td class="border border-gray-300 px-4 py-2">{{ user.role }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</body>
+</html>

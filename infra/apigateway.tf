@@ -34,14 +34,22 @@ resource "aws_api_gateway_deployment" "auth_api_deployment_quotezen" {
     aws_api_gateway_method.signup_method_quotezen,
     aws_api_gateway_method.signup_options_quotezen,
     aws_api_gateway_integration.signup_integration_quotezen,
+    aws_api_gateway_integration_response.signup_options_integration_response_quotezen,
 
     aws_api_gateway_method.confirm_account_method_quotezen,
     aws_api_gateway_method.confirm_account_options_quotezen,
     aws_api_gateway_integration.confirm_account_integration_quotezen,
+    aws_api_gateway_integration_response.confirm_account_options_integration_response_quotezen,
 
     aws_api_gateway_method.signin_method_quotezen,
     aws_api_gateway_method.signin_options_quotezen,
-    aws_api_gateway_integration.signin_integration_quotezen
+    aws_api_gateway_integration.signin_integration_quotezen,
+    aws_api_gateway_integration_response.signin_options_integration_response_quotezen,
+
+    aws_api_gateway_method.get_user_method_quotezen,
+    aws_api_gateway_method.get_user_options_quotezen,
+    aws_api_gateway_integration.get_user_integration_quotezen,
+    aws_api_gateway_integration_response.get_user_options_integration_response_quotezen
   ]
 }
 
