@@ -1,6 +1,4 @@
 from flask import Flask, render_template
-# import boto3
-# import os
 
 app = Flask(__name__)
 
