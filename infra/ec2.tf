@@ -1,101 +1,77 @@
-resource "aws_vpc" "main_vpc" {
-  cidr_block = "10.0.0.0/16"
-
-  tags = {
-    Name = "main-vpc"
-  }
-}
-
-variable "vpc_id" {
-  default = aws_vpc.main_vpc.id
-}
-
 resource "aws_instance" "flask_ec2_quotezen" {
-  ami                         = var.ami
-  instance_type               = var.instance_type
-  key_name                    = var.ssh_key_pair_name
+  ami                    = var.ami
+  instance_type          = var.instance_type
+  key_name               = var.ssh_key_pair_name
   associate_public_ip_address = true
-  iam_instance_profile        = aws_iam_instance_profile.flask_profile.name
-  vpc_security_group_ids      = [aws_security_group.flask_sg.id]
 
-  # Usa user_data en lugar de remote-exec para evitar reprovisionar
-  user_data = <<-EOF
-    #!/bin/bash
-    export DEBIAN_FRONTEND=noninteractive
 
-    # Actualizar paquetes
-    sudo apt-get update -y && sudo apt-get upgrade -y
+  provisioner "remote-exec" {
+    inline = [
+      # Avoid unnecessary prompts
+      "export DEBIAN_FRONTEND=noninteractive",
 
-    # Instalar dependencias necesarias
-    sudo apt-get install -y python3 python3-pip python3-venv git nginx unzip
+      # Update package list and install required packages
+      "sudo apt-get update -y",
+      "sudo apt-get install -y python3 python3-pip python3-venv git libpq-dev python3-dev",
 
-    # Crear usuario para correr Flask
-    sudo useradd -m -s /bin/bash flask_user || true
-    sudo usermod -aG sudo flask_user
+      # Clone Flask application from GitHub
+      "git clone ${var.github_repo} /home/ubuntu/flask_app",
 
-    # Clonar repo si no existe
-    if [ ! -d "/home/flask_user/flask_app" ]; then
-      sudo -u flask_user git clone ${var.github_repo} /home/flask_user/flask_app
-    fi
+      # Create and activate a virtual environment
+      "python3 -m venv /home/ubuntu/flask_app/venv",
 
-    cd /home/flask_user/flask_app
+      # Upgrade pip within the virtual environment
+      "/home/ubuntu/flask_app/venv/bin/pip install --upgrade pip",
 
-    # Crear entorno virtual si no existe
-    sudo -u flask_user python3 -m venv venv
+      # Install Flask application dependencies
+      "/home/ubuntu/flask_app/venv/bin/pip install -r /home/ubuntu/flask_app/app/requirements.txt",
 
-    # Instalar dependencias
-    sudo -u flask_user /home/flask_user/flask_app/venv/bin/pip install --upgrade pip
-    sudo -u flask_user /home/flask_user/flask_app/venv/bin/pip install -r requirements.txt
+      "/home/ubuntu/flask_app/venv/bin/pip install --upgrade gevent",
 
-    # Configurar Gunicorn
-    sudo bash -c 'cat > /etc/systemd/system/flask_app.service <<EOF
-    [Unit]
-    Description=Gunicorn instance to serve Flask application
-    After=network.target
+      # Allow traffic on port 5000
+      "sudo ufw allow 5000",
 
-    [Service]
-    User=flask_user
-    Group=flask_user
-    WorkingDirectory=/home/flask_user/flask_app
-    Environment="PATH=/home/flask_user/flask_app/venv/bin"
-    ExecStart=/home/flask_user/flask_app/venv/bin/gunicorn -w 3 -b 0.0.0.0:8000 app:app
-    Restart=always
+      # Create a systemd service for Flask app
+      "sudo bash -c 'cat > /etc/systemd/system/flask_app.service <<EOF",
+      "[Unit]",
+      "Description=Gunicorn instance to serve Flask application",
+      "After=network.target",
 
-    [Install]
-    WantedBy=multi-user.target
-    EOF'
+      "[Service]",
+      "User=ubuntu",
+      "Group=ubuntu",
+      "WorkingDirectory=/home/ubuntu/flask_app",
+      "Environment=\"PATH=/home/ubuntu/flask_app/venv/bin\"",
+      "Environment=\"AWS_REGION=${var.aws_region}\"",
+      "Environment=\"client_id=${aws_cognito_user_pool_client.user_pool_client_quotezen.id}\"",
+      "Environment=\"user_pool=${aws_cognito_user_pool.user_pool_quotezen.id}\"",
+      "ExecStart=/home/ubuntu/flask_app/venv/bin/gunicorn -w 2 -k gthread -b 0.0.0.0:5000 -t 360 app.run:app",
+      "Restart=always",
 
-    # Iniciar servicio Flask
-    sudo systemctl daemon-reload
-    sudo systemctl enable flask_app
-    sudo systemctl restart flask_app
+      "[Install]",
+      "WantedBy=multi-user.target",
+      "EOF'",
 
-    # Configurar Nginx como proxy reverso
-    sudo bash -c 'cat > /etc/nginx/sites-available/flask_app <<EOF
-    server {
-        listen 80;
-        server_name _;
+      # Reload systemd, start and enable the Flask app service
+      "sudo systemctl daemon-reload",
+      "sudo systemctl start flask_app",
+      "sudo systemctl enable flask_app"
+    ]
 
-        location / {
-            proxy_pass http://127.0.0.1:8000;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-        }
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"  # SSH username for Amazon Linux, CentOS, or Red Hat AMIs
+      private_key = file(var.private_key_ec2_path)  # Replace with the path to your SSH private key file
+      host        = self.public_ip
     }
-    EOF'
-
-    # Activar configuración y reiniciar Nginx
-    sudo ln -s /etc/nginx/sites-available/flask_app /etc/nginx/sites-enabled/
-    sudo systemctl restart nginx
-
-    echo "🚀 Flask + Gunicorn + Nginx deployed!"
-  EOF
+  }
 
   tags = {
-    Name = "flask-ec2-quotezen"
+    Name = "quotezen_ec2"
   }
+
+  vpc_security_group_ids = [aws_security_group.security_group_ec2_quotezen.id]
+
 }
 
 # **🔹 IAM Role para evitar credenciales en la instancia**
@@ -117,30 +93,36 @@ resource "aws_iam_instance_profile" "flask_profile" {
   role = aws_iam_role.flask_role.name
 }
 
-# 🔹 **Security Group para Flask**
-resource "aws_security_group" "flask_sg" {
-  name        = "flask_sg"
-  description = "Security group for Flask on EC2"
-  vpc_id      = var.vpc_id
+resource "aws_security_group" "security_group_ec2_quotezen" {
+  name        = "security_group_ec2_quotezen"
+  description = "Security group for Flask EC2 instance"
+
+  // Ingress rule to allow HTTP traffic from anywhere
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]  // Allow traffic from any IPv4 address
+  }
 
   ingress {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_ip] # ✅ Solo acceso SSH desde IP autorizada
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   ingress {
-    from_port   = 80
-    to_port     = 80
+    from_port   = 5000
+    to_port     = 5000
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]  # ✅ Acceso HTTP para Nginx
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"   // Allow all protocols
+    cidr_blocks     = ["0.0.0.0/0"]  // Allow traffic to any IPv4 address
   }
 }
