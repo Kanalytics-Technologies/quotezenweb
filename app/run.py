@@ -7,11 +7,11 @@ import re
 import nltk
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+from datetime import datetime
 
 # Descargar stopwords si no están disponibles
 nltk.download("punkt")
 nltk.download("stopwords")
-nltk.download('punkt_tab')
 
 app = Flask(__name__)
 app.secret_key = "super_secret_key"
@@ -36,6 +36,7 @@ def translate_text(text, source_lang="auto", target_lang="en"):
         print(f"❌ Error en la traducción con Amazon Translate: {e}")
         return text  # Retorna el texto original si hay un error
 
+
 def clean_injury_context(context):
     """Elimina palabras irrelevantes (stopwords) del contexto de la lesión."""
     stop_words = set(stopwords.words("english"))
@@ -43,11 +44,13 @@ def clean_injury_context(context):
     filtered_words = [word for word in words if word.isalnum() and word not in stop_words]
     return " ".join(filtered_words)
 
+
 def parse_s3_url(s3_url):
     match = re.match(r"https://([^.]+).s3.[^.]+.amazonaws.com/(.+)", s3_url)
     if not match:
         raise ValueError("URL de S3 no válida")
     return match.group(1), match.group(2)
+
 
 def read_excel_from_s3(s3_url):
     bucket_name, key = parse_s3_url(s3_url)
@@ -55,6 +58,7 @@ def read_excel_from_s3(s3_url):
     file_stream = BytesIO(response["Body"].read())
     df = pd.read_excel(file_stream)
     return df.head(100)
+
 
 def get_all_injury_variations(injury_type):
     """Usa AWS Comprehend Medical para obtener variaciones y términos médicos relacionados."""
@@ -78,6 +82,7 @@ def get_all_injury_variations(injury_type):
 
     return injury_variations
 
+
 def detect_injury_with_comprehend(text, injury_variations):
     """Busca términos médicos relacionados en un texto."""
     detected_conditions = set()
@@ -96,8 +101,10 @@ def detect_injury_with_comprehend(text, injury_variations):
 
     return related_conditions
 
-def filter_records(df, injury_type, injury_context, column_name="Event Description English"):
-    """Filtra registros por lesión médica detectada y palabras clave en el contexto."""
+
+def filter_records(df, injury_type, injury_context, start_date=None, end_date=None,
+                   column_name="Event Description English"):
+    """Filtra registros por lesión médica detectada, palabras clave en el contexto y rango de fechas."""
     if column_name not in df.columns:
         return pd.DataFrame()
 
@@ -116,11 +123,32 @@ def filter_records(df, injury_type, injury_context, column_name="Event Descripti
 
     filtered_records = []
 
+    # 📌 Convertir fechas a formato datetime sin la hora para comparar solo la fecha
+    if start_date:
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+    if end_date:
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+
     for _, row in df.iterrows():
         event_text = str(row[column_name]).lower()
 
+        # 📌 Obtener y convertir la fecha del registro
+        event_date_str = str(row.get("Event Date Time", ""))
+        try:
+            event_date = datetime.strptime(event_date_str, "%m/%d/%Y %I:%M:%S %p").date()
+        except ValueError:
+            event_date = None  # Ignorar si el formato no es válido
+
+        # 📌 Aplicar filtro de fechas si están definidas
+        if start_date and event_date and event_date < start_date:
+            continue
+        if end_date and event_date and event_date > end_date:
+            continue
+
+        # 📌 Detectar condiciones médicas con AWS Comprehend
         detected_conditions = detect_injury_with_comprehend(event_text, injury_variations)
 
+        # 📌 Filtrar solo si se detectó una lesión y contiene palabras clave del contexto
         if detected_conditions and any(word in event_text for word in context_keywords):
             detected_terms.update(detected_conditions)
             row_dict = row.to_dict()
@@ -130,12 +158,15 @@ def filter_records(df, injury_type, injury_context, column_name="Event Descripti
     print(f"\n✅ 🔥 Términos finales detectados relacionados con '{injury_type_translated}': {detected_terms}")
     return pd.DataFrame(filtered_records), detected_terms
 
+
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
     filtered_records = []
     s3_url = request.form.get("s3_url", "").strip()
     injury_type = request.form.get("injury_type", "").strip()
     injury_context = request.form.get("injury_context", "").strip()
+    start_date = request.form.get("start_date", "").strip()
+    end_date = request.form.get("end_date", "").strip()
     detected_terms = set()
 
     if request.method == "POST":
@@ -145,7 +176,7 @@ def analyze():
 
         df = read_excel_from_s3(s3_url)
 
-        filtered_df, detected_terms = filter_records(df, injury_type, injury_context)
+        filtered_df, detected_terms = filter_records(df, injury_type, injury_context, start_date, end_date)
         filtered_records = filtered_df.to_dict(orient="records")
 
         if filtered_df.empty:
@@ -154,6 +185,7 @@ def analyze():
 
     return render_template("analyze.html", s3_url=s3_url, records=filtered_records,
                            detected_terms=list(detected_terms), injury_type=injury_type)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
