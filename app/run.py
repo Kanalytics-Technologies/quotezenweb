@@ -154,3 +154,6 @@ def analyze():
 
     return render_template("analyze.html", s3_url=s3_url, records=filtered_records,
                            detected_terms=list(detected_terms), injury_type=injury_type)
+
+if __name__ == "__main__":
+    app.run(debug=True)
