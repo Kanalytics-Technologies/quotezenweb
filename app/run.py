@@ -22,7 +22,6 @@ comprehend_medical = boto3.client("comprehendmedical", region_name=AWS_REGION)
 translate = boto3.client("translate", region_name=AWS_REGION)
 s3 = boto3.client("s3", region_name=AWS_REGION)
 
-
 def translate_text(text, source_lang="auto", target_lang="en"):
     """Traduce el texto al inglés usando Amazon Translate."""
     try:
@@ -36,7 +35,6 @@ def translate_text(text, source_lang="auto", target_lang="en"):
         print(f"❌ Error en la traducción con Amazon Translate: {e}")
         return text  # Retorna el texto original si hay un error
 
-
 def clean_injury_context(context):
     """Elimina palabras irrelevantes (stopwords) del contexto de la lesión."""
     stop_words = set(stopwords.words("english"))
@@ -44,13 +42,11 @@ def clean_injury_context(context):
     filtered_words = [word for word in words if word.isalnum() and word not in stop_words]
     return " ".join(filtered_words)
 
-
 def parse_s3_url(s3_url):
     match = re.match(r"https://([^.]+).s3.[^.]+.amazonaws.com/(.+)", s3_url)
     if not match:
         raise ValueError("URL de S3 no válida")
     return match.group(1), match.group(2)
-
 
 def read_excel_from_s3(s3_url):
     bucket_name, key = parse_s3_url(s3_url)
@@ -58,7 +54,6 @@ def read_excel_from_s3(s3_url):
     file_stream = BytesIO(response["Body"].read())
     df = pd.read_excel(file_stream)
     return df.head(400)
-
 
 def get_all_injury_variations(injury_type):
     """Usa AWS Comprehend Medical para obtener variaciones y términos médicos relacionados."""
@@ -82,7 +77,6 @@ def get_all_injury_variations(injury_type):
 
     return injury_variations
 
-
 def detect_injury_with_comprehend(text, injury_variations):
     """Busca términos médicos relacionados en un texto."""
     detected_conditions = set()
@@ -101,14 +95,13 @@ def detect_injury_with_comprehend(text, injury_variations):
 
     return related_conditions
 
-
 def filter_records(df, injury_type, injury_context, start_date=None, end_date=None,
                    column_name="Event Description English"):
     """Filtra registros por lesión médica detectada, palabras clave en el contexto y rango de fechas."""
     if column_name not in df.columns:
         return pd.DataFrame()
 
-    # 📌 Traducir `injury_type` y `injury_context` al inglés antes de analizarlos
+    # 📌 Traducir injury_type y injury_context al inglés antes de analizarlos
     injury_type_translated = translate_text(injury_type)
     injury_context_translated = translate_text(injury_context)
 
@@ -158,7 +151,6 @@ def filter_records(df, injury_type, injury_context, start_date=None, end_date=No
     print(f"\n✅ 🔥 Términos finales detectados relacionados con '{injury_type_translated}': {detected_terms}")
     return pd.DataFrame(filtered_records), detected_terms
 
-
 @app.route("/analyze", methods=["GET", "POST"])
 def analyze():
     filtered_records = []
@@ -185,7 +177,6 @@ def analyze():
 
     return render_template("analyze.html", s3_url=s3_url, records=filtered_records,
                            detected_terms=list(detected_terms), injury_type=injury_type)
-
 
 if __name__ == "__main__":
     app.run(debug=True)
