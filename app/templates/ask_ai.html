@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h1 class="h3 mb-3"><strong>Analizar</strong> Archivo con IA</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Hacer una Pregunta</h5>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <form action="{{ url_for('ask_question') }}" method="post">
+                    <div class="mb-3">
+                        <label for="question" class="form-label">Pregunta:</label>
+                        <input type="text" class="form-control" name="question" id="question" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Preguntar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if answer %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Respuesta de la IA</h5>
+                <p>{{ answer }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block title %}Shippers Users Management{% endblock %}
+
+{% block content %}
+<!-- Main Content -->
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Shippers Users Management</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#userModal">
+            <i class="fas fa-user-plus"></i> Add Shipper
+        </button>
+    </div>
+
+    <!-- User Table -->
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Company</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Email Verified</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody id="userTableBody"
+                   hx-get="/get_users"
+                   hx-trigger="load"
+                   hx-target="#userTableBody"
+                   hx-swap="innerHTML">
+                <!-- Dynamic Content Loaded via HTMX -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalLabel">Add User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form hx-post="/create_user" hx-target="#userTableBody" hx-swap="beforeend" hx-on::after-request="document.getElementById('userModal').querySelector('.btn-close').click()">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="company" class="form-label">Company</label>
+                        <input type="text" class="form-control" id="company" name="company" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="Admin">Admin</option>
+                            <option value="User">User</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-success">Add User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        sidebar.classList.toggle('collapsed');
+    }
+</script>
+
+{% endblock %}

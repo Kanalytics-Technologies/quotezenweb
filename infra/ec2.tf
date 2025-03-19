@@ -42,10 +42,9 @@ resource "aws_instance" "flask_ec2_quotezen" {
       "Group=ubuntu",
       "WorkingDirectory=/home/ubuntu/flask_app",
       "Environment=\"PATH=/home/ubuntu/flask_app/venv/bin\"",
-      "Environment=\"AWS_REGION=${var.aws_region}\"",
-      "Environment=\"client_id=${aws_cognito_user_pool_client.user_pool_client_quotezen.id}\"",
-      "Environment=\"user_pool=${aws_cognito_user_pool.user_pool_quotezen.id}\"",
-      "ExecStart=/home/ubuntu/flask_app/venv/bin/gunicorn -w 2 -k gthread -b 0.0.0.0:5000 -t 360 app.run:app",
+      "Environment=\"AWS_ACCESS_KEY_ID=${var.accessKeyId}\"",
+      "Environment=\"AWS_SECRET_ACCESS_KEY=${var.secretAccessKey}\"",
+      "ExecStart=/home/ubuntu/flask_app/venv/bin/gunicorn -w 2 -b 0.0.0.0:5000 app.run:app",
       "Restart=always",
 
       "[Install]",
