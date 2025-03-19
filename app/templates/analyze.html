@@ -9,7 +9,7 @@
             <div class="card-body">
                 <h5 class="card-title">Buscar Registros</h5>
 
-                <form action="{{ url_for('analyze') }}" method="post">
+                <form action="{{ url_for('analyze') }}" method="post" onsubmit="showLoader()">
                     <div class="mb-3">
                         <label for="s3_url" class="form-label">URL de S3 del archivo:</label>
                         <input type="text" class="form-control" name="s3_url" id="s3_url" required>
@@ -35,8 +35,18 @@
                         <input type="date" class="form-control" name="end_date" id="end_date">
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Buscar</button>
+                    <button type="submit" class="btn btn-primary" id="searchButton">
+                        Buscar
+                    </button>
                 </form>
+
+                <!-- 🟢 Loader Oculto -->
+                <div id="loading" class="text-center mt-3" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Se está analizando con Inteligencia Artificial su búsqueda...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -86,5 +96,13 @@
     </div>
 </div>
 {% endif %}
+
+<!-- JavaScript para mostrar el loader -->
+<script>
+    function showLoader() {
+        document.getElementById("loading").style.display = "block";
+        document.getElementById("searchButton").disabled = true;
+    }
+</script>
 
 {% endblock %}
