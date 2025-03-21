@@ -58,7 +58,7 @@ def read_excel_from_s3(s3_url):
     response = s3.get_object(Bucket=bucket_name, Key=key)
     file_stream = BytesIO(response["Body"].read())
     df = pd.read_excel(file_stream)
-    return df.head(400)  # 🔹 Se limita a 400 registros para optimización
+    return df.head(100)  # 🔹 Se limita a 400 registros para optimización
 
 
 def get_all_injury_variations(injury_type):
