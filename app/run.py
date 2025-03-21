@@ -10,9 +10,6 @@ from nltk.tokenize import word_tokenize
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Descargar stopwords si no están disponibles
-nltk.download("punkt")
-nltk.download("stopwords")
 
 app = Flask(__name__)
 app.secret_key = "super_secret_key"
